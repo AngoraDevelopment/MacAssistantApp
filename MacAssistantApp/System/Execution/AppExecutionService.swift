@@ -8,22 +8,25 @@
 import AppKit
 import Foundation
 
-struct AppExecutionService {
-    let installedAppsIndex: InstalledAppsIndex
+@MainActor
+final class AppExecutionService {
+    private let installedAppsIndex: InstalledAppsIndex
+
+    init(installedAppsIndex: InstalledAppsIndex) {
+        self.installedAppsIndex = installedAppsIndex
+    }
 
     func openApp(named name: String) -> AssistantExecutionResult {
         let resolver = AppResolver(installedAppsIndex: installedAppsIndex)
 
         guard let app = resolver.resolve(name) else {
             let suggestions = resolver.suggestions(for: name).map(\.displayName)
-            let suggestionText = suggestions.isEmpty
-                ? ""
-                : " Posibles coincidencias: " + suggestions.joined(separator: ", ") + "."
+            let suffix = suggestions.isEmpty ? "" : " Posibles coincidencias: \(suggestions.joined(separator: ", "))."
 
             return AssistantExecutionResult(
                 success: false,
                 technicalMessage: "No se encontró app para '\(name)'",
-                userMessage: "No pude encontrar una app llamada \(name).\(suggestionText)"
+                userMessage: "No pude encontrar una app llamada \(name).\(suffix)"
             )
         }
 
@@ -32,7 +35,7 @@ struct AppExecutionService {
 
         workspace.openApplication(at: app.appURL, configuration: config) { runningApp, error in
             if let error {
-                print("Error abriendo \(app.displayName):", error.localizedDescription)
+                print("Error abriendo \(app.displayName): \(error.localizedDescription)")
                 return
             }
 
@@ -45,7 +48,7 @@ struct AppExecutionService {
 
         return AssistantExecutionResult(
             success: true,
-            technicalMessage: "App abierta desde índice → \(app.displayName) | \(app.appURLPath)",
+            technicalMessage: "App abierta → \(app.displayName) | \(app.appURLPath)",
             userMessage: "Listo, intenté abrir \(app.displayName)."
         )
     }
@@ -59,7 +62,7 @@ struct AppExecutionService {
             return AssistantExecutionResult(
                 success: false,
                 technicalMessage: "App no estaba abierta → \(normalized)",
-                userMessage: "Esa app no está abierta ahora mismo."
+                userMessage: "No vi \(normalized) abierta."
             )
         }
 
@@ -67,8 +70,8 @@ struct AppExecutionService {
 
         return AssistantExecutionResult(
             success: ok,
-            technicalMessage: "Intento de cierre app → \(normalized) | success: \(ok)",
-            userMessage: ok ? "Listo, intenté cerrar \(normalized)." : "No pude cerrar esa app."
+            technicalMessage: "Terminate \(normalized) → \(ok)",
+            userMessage: ok ? "Listo, intenté cerrar \(normalized)." : "No pude cerrar \(normalized)."
         )
     }
 
@@ -81,7 +84,7 @@ struct AppExecutionService {
             try process.run()
             return AssistantExecutionResult(
                 success: true,
-                technicalMessage: "Apagado solicitado",
+                technicalMessage: "Solicitud de apagado enviada",
                 userMessage: "Listo, intenté apagar la Mac."
             )
         } catch {

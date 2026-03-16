@@ -8,7 +8,8 @@
 import AppKit
 import Foundation
 
-struct FolderExecutionService {
+@MainActor
+final class FolderExecutionService {
     func openFolder(_ path: String) -> AssistantExecutionResult {
         let expandedPath = NSString(string: path).expandingTildeInPath
         let url = URL(fileURLWithPath: expandedPath)
@@ -26,9 +27,7 @@ struct FolderExecutionService {
         return AssistantExecutionResult(
             success: opened,
             technicalMessage: "Carpeta abierta → \(expandedPath)",
-            userMessage: opened
-                ? "Listo, abrí la carpeta."
-                : "Intenté abrir la carpeta, pero no salió bien."
+            userMessage: opened ? "Listo, abrí esa carpeta." : "No pude abrir esa carpeta."
         )
     }
 

@@ -11,38 +11,28 @@ final class SystemActionExecutor {
     private let workflowService: WorkflowExecutionService
 
     init(
-        memoryStore: MemoryStore,
-        workflowStore: WorkflowStore,
-        installedAppsIndex: InstalledAppsIndex,
-        userFilesIndex: UserFilesIndex
+        appService: AppExecutionService,
+        fileService: FileExecutionService,
+        folderService: FolderExecutionService,
+        webService: WebExecutionService,
+        memoryService: MemoryExecutionService,
+        workflowService: WorkflowExecutionService
     ) {
-        self.appService = AppExecutionService(installedAppsIndex: installedAppsIndex)
-        self.fileService = FileExecutionService(userFilesIndex: userFilesIndex)
-        self.folderService = FolderExecutionService()
-        self.webService = WebExecutionService()
-        self.memoryService = MemoryExecutionService(memoryStore: memoryStore)
-        self.workflowService = WorkflowExecutionService(workflowStore: workflowStore)
+        self.appService = appService
+        self.fileService = fileService
+        self.folderService = folderService
+        self.webService = webService
+        self.memoryService = memoryService
+        self.workflowService = workflowService
     }
 
     func execute(_ action: AssistantAction) -> AssistantExecutionResult {
         switch action {
-        case .searchGoogle(let query):
-            return webService.searchGoogle(query)
-
-        case .openWebsite(let url):
-            return webService.openWebsite(url)
-
         case .openApp(let name):
             return appService.openApp(named: name)
 
-        case .searchInsideWebsite(let site, let query):
-            return webService.searchInsideWebsite(site: site, query: query)
-
-        case .openFolder(let path):
-            return folderService.openFolder(path)
-
-        case .createFolder(let basePath, let folderName):
-            return folderService.createFolder(basePath: basePath, folderName: folderName)
+        case .quitApp(let name):
+            return appService.quitApp(named: name)
 
         case .openFile(let path):
             return fileService.openFile(at: path)
@@ -50,8 +40,20 @@ final class SystemActionExecutor {
         case .findFile(let query):
             return fileService.findFile(query: query)
 
-        case .quitApp(let name):
-            return appService.quitApp(named: name)
+        case .openFolder(let path):
+            return folderService.openFolder(path)
+
+        case .createFolder(let basePath, let folderName):
+            return folderService.createFolder(basePath: basePath, folderName: folderName)
+
+        case .openWebsite(let url):
+            return webService.openWebsite(url)
+
+        case .searchGoogle(let query):
+            return webService.searchGoogle(query)
+
+        case .searchInsideWebsite(let site, let query):
+            return webService.searchInsideWebsite(site: site, query: query)
 
         case .rememberFolderAlias(let alias, let path):
             return memoryService.rememberFolderAlias(alias: alias, path: path)
@@ -72,33 +74,33 @@ final class SystemActionExecutor {
             return memoryService.forgetWebsiteAlias(alias)
 
         case .listMemory:
-            return memoryService.formattedFullMemory()
+            return memoryService.listMemory()
 
         case .listFolderAliases:
-            return memoryService.formattedFolderAliases()
+            return memoryService.listFolderAliases()
 
         case .listAppAliases:
-            return memoryService.formattedAppAliases()
+            return memoryService.listAppAliases()
 
         case .listWebsiteAliases:
-            return memoryService.formattedWebsiteAliases()
+            return memoryService.listWebsiteAliases()
 
         case .clearMemory:
             return memoryService.clearMemory()
 
         case .listWorkflows:
-            return workflowService.formattedWorkflows()
+            return workflowService.listWorkflows()
 
         case .createWorkflow(let name, let commands):
             return workflowService.createWorkflow(name: name, commands: commands)
 
         case .deleteWorkflow(let name):
-            return workflowService.deleteWorkflow(named: name)
+            return workflowService.deleteWorkflow(name: name)
 
         case .runWorkflow:
             return AssistantExecutionResult(
                 success: true,
-                technicalMessage: "runWorkflow se gestiona desde AssistantViewModel",
+                technicalMessage: "runWorkflow se coordina fuera del executor",
                 userMessage: "Voy a ejecutar ese workflow."
             )
 

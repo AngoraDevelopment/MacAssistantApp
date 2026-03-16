@@ -8,38 +8,35 @@
 import AppKit
 import Foundation
 
-struct WebExecutionService {
-    func searchGoogle(_ query: String) -> AssistantExecutionResult {
-        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+@MainActor
+final class WebExecutionService {
+    func openWebsite(_ url: URL) -> AssistantExecutionResult {
+        let opened = NSWorkspace.shared.open(url)
 
-        guard let url = URL(string: "https://www.google.com/search?q=\(encoded)") else {
-            return AssistantExecutionResult(
-                success: false,
-                technicalMessage: "No se pudo construir URL de Google para query '\(query)'",
-                userMessage: "No pude construir esa búsqueda en Google."
-            )
-        }
-
-        return openURL(
-            url,
-            technical: "Búsqueda Google → \(query)",
-            user: "Listo, busqué “\(query)” en Google."
+        return AssistantExecutionResult(
+            success: opened,
+            technicalMessage: "Sitio abierto → \(url.absoluteString)",
+            userMessage: opened ? "Listo, abrí ese sitio." : "No pude abrir ese sitio."
         )
     }
 
-    func openWebsite(_ url: URL) -> AssistantExecutionResult {
-        openURL(
-            url,
-            technical: "Sitio abierto → \(url.absoluteString)",
-            user: "Listo, abrí \(url.absoluteString)."
-        )
+    func searchGoogle(_ query: String) -> AssistantExecutionResult {
+        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        guard let url = URL(string: "https://www.google.com/search?q=\(encoded)") else {
+            return AssistantExecutionResult(
+                success: false,
+                technicalMessage: "No se pudo construir URL de búsqueda Google",
+                userMessage: "No pude preparar esa búsqueda."
+            )
+        }
+
+        return openWebsite(url)
     }
 
     func searchInsideWebsite(site: String, query: String) -> AssistantExecutionResult {
         let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
 
         let urlString: String?
-
         switch site.lowercased() {
         case "youtube":
             urlString = "https://www.youtube.com/results?search_query=\(encoded)"
@@ -54,29 +51,17 @@ struct WebExecutionService {
         guard let urlString, let url = URL(string: urlString) else {
             return AssistantExecutionResult(
                 success: false,
-                technicalMessage: "No se pudo construir búsqueda dentro de \(site) para '\(query)'",
-                userMessage: "No pude preparar esa búsqueda dentro de \(site)."
+                technicalMessage: "No se pudo construir búsqueda en sitio → \(site)",
+                userMessage: "No pude preparar esa búsqueda en \(site)."
             )
         }
 
-        return openURL(
-            url,
-            technical: "Búsqueda dentro de sitio → \(site) | \(query)",
-            user: "Listo, abrí \(site.capitalized) y lancé la búsqueda de “\(query)”."
-        )
-    }
-
-    private func openURL(
-        _ url: URL,
-        technical: String,
-        user: String
-    ) -> AssistantExecutionResult {
         let opened = NSWorkspace.shared.open(url)
 
         return AssistantExecutionResult(
             success: opened,
-            technicalMessage: technical,
-            userMessage: opened ? user : "Intenté abrir el enlace, pero no salió bien."
+            technicalMessage: "Búsqueda en sitio → \(site) | \(query) | \(url.absoluteString)",
+            userMessage: opened ? "Listo, abrí \(site.capitalized) con esa búsqueda." : "No pude abrir \(site.capitalized) con esa búsqueda."
         )
     }
 }

@@ -8,8 +8,13 @@
 import AppKit
 import Foundation
 
-struct FileExecutionService {
-    let userFilesIndex: UserFilesIndex
+@MainActor
+final class FileExecutionService {
+    private let userFilesIndex: UserFilesIndex
+
+    init(userFilesIndex: UserFilesIndex) {
+        self.userFilesIndex = userFilesIndex
+    }
 
     func openFile(at path: String) -> AssistantExecutionResult {
         let expandedPath = NSString(string: path).expandingTildeInPath
@@ -19,7 +24,7 @@ struct FileExecutionService {
             return AssistantExecutionResult(
                 success: false,
                 technicalMessage: "Archivo no existe → \(expandedPath)",
-                userMessage: "No encontré ese archivo."
+                userMessage: "No pude encontrar ese archivo."
             )
         }
 
@@ -28,9 +33,7 @@ struct FileExecutionService {
         return AssistantExecutionResult(
             success: opened,
             technicalMessage: "Archivo abierto → \(expandedPath)",
-            userMessage: opened
-                ? "Listo, abrí el archivo \(url.lastPathComponent)."
-                : "Intenté abrir el archivo, pero no salió bien."
+            userMessage: opened ? "Listo, abrí \(url.lastPathComponent)." : "No pude abrir ese archivo."
         )
     }
 
@@ -39,14 +42,12 @@ struct FileExecutionService {
 
         guard let file = resolver.resolve(query) else {
             let suggestions = resolver.suggestions(for: query).map(\.fileName)
-            let suggestionText = suggestions.isEmpty
-                ? ""
-                : " Quizá quisiste decir: " + suggestions.joined(separator: ", ") + "."
+            let suffix = suggestions.isEmpty ? "" : " Quizá quisiste decir: \(suggestions.joined(separator: ", "))."
 
             return AssistantExecutionResult(
                 success: false,
-                technicalMessage: "Archivo no encontrado para '\(query)'",
-                userMessage: "No encontré un archivo que coincida con \(query).\(suggestionText)"
+                technicalMessage: "Archivo no encontrado → \(query)",
+                userMessage: "No encontré un archivo que coincida con \(query).\(suffix)"
             )
         }
 
@@ -55,9 +56,7 @@ struct FileExecutionService {
         return AssistantExecutionResult(
             success: opened,
             technicalMessage: "Archivo resuelto y abierto → \(file.filePath)",
-            userMessage: opened
-                ? "Listo, abrí \(file.fileName)."
-                : "Encontré \(file.fileName), pero no pude abrirlo."
+            userMessage: opened ? "Listo, abrí \(file.fileName)." : "Encontré \(file.fileName), pero no pude abrirlo."
         )
     }
 }

@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct SystemCommandParser {
+struct SystemCommandParser : AssistantActionParsing {
     private let classifier = IntentClassifierService()
     private let entities = EntityExtractor()
     
