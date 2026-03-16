@@ -1,0 +1,95 @@
+//
+//  AppExecutionService.swift
+//  MacAssistantApp
+//
+//  Created by Edgardo Ramos on 3/15/26.
+//
+
+import AppKit
+import Foundation
+
+struct AppExecutionService {
+    let installedAppsIndex: InstalledAppsIndex
+
+    func openApp(named name: String) -> AssistantExecutionResult {
+        let resolver = AppResolver(installedAppsIndex: installedAppsIndex)
+
+        guard let app = resolver.resolve(name) else {
+            let suggestions = resolver.suggestions(for: name).map(\.displayName)
+            let suggestionText = suggestions.isEmpty
+                ? ""
+                : " Posibles coincidencias: " + suggestions.joined(separator: ", ") + "."
+
+            return AssistantExecutionResult(
+                success: false,
+                technicalMessage: "No se encontró app para '\(name)'",
+                userMessage: "No pude encontrar una app llamada \(name).\(suggestionText)"
+            )
+        }
+
+        let workspace = NSWorkspace.shared
+        let config = NSWorkspace.OpenConfiguration()
+
+        workspace.openApplication(at: app.appURL, configuration: config) { runningApp, error in
+            if let error {
+                print("Error abriendo \(app.displayName):", error.localizedDescription)
+                return
+            }
+
+            guard let runningApp else { return }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                _ = runningApp.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+            }
+        }
+
+        return AssistantExecutionResult(
+            success: true,
+            technicalMessage: "App abierta desde índice → \(app.displayName) | \(app.appURLPath)",
+            userMessage: "Listo, intenté abrir \(app.displayName)."
+        )
+    }
+
+    func quitApp(named name: String) -> AssistantExecutionResult {
+        let normalized = NameNormalizer.normalizeApp(name)
+
+        guard let app = NSWorkspace.shared.runningApplications.first(where: {
+            ($0.localizedName ?? "").lowercased() == normalized.lowercased()
+        }) else {
+            return AssistantExecutionResult(
+                success: false,
+                technicalMessage: "App no estaba abierta → \(normalized)",
+                userMessage: "Esa app no está abierta ahora mismo."
+            )
+        }
+
+        let ok = app.terminate()
+
+        return AssistantExecutionResult(
+            success: ok,
+            technicalMessage: "Intento de cierre app → \(normalized) | success: \(ok)",
+            userMessage: ok ? "Listo, intenté cerrar \(normalized)." : "No pude cerrar esa app."
+        )
+    }
+
+    func shutdownMac() -> AssistantExecutionResult {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        process.arguments = ["-e", "tell application \"System Events\" to shut down"]
+
+        do {
+            try process.run()
+            return AssistantExecutionResult(
+                success: true,
+                technicalMessage: "Apagado solicitado",
+                userMessage: "Listo, intenté apagar la Mac."
+            )
+        } catch {
+            return AssistantExecutionResult(
+                success: false,
+                technicalMessage: "Error apagando Mac → \(error.localizedDescription)",
+                userMessage: "No pude apagar la Mac."
+            )
+        }
+    }
+}
