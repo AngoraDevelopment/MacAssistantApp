@@ -11,8 +11,12 @@ enum AssistantAction: Equatable {
     case searchGoogle(query: String)
     case openWebsite(url: URL)
     case openApp(name: String)
-
+    
+    case searchInsideWebsite(site: String, query: String)
+    
     case openFolder(path: String)
+    case openFile(path: String)
+    case findFile(query: String)
     case createFolder(basePath: String, folderName: String?)
     case quitApp(name: String)
     
@@ -30,6 +34,11 @@ enum AssistantAction: Equatable {
     case listWebsiteAliases
     case clearMemory
     
+    case runWorkflow(name: String)
+    case listWorkflows
+    case createWorkflow(name: String, commands: [String])
+    case deleteWorkflow(name: String)
+    
     case shutdownMac
     case unknown
 }
@@ -42,6 +51,7 @@ extension AssistantAction {
              .quitApp,
              .forgetFolderAlias,
              .forgetAppAlias,
+             .deleteWorkflow,
              .forgetWebsiteAlias:
             return true
 
@@ -65,6 +75,9 @@ extension AssistantAction {
              .forgetAppAlias(let alias),
              .forgetWebsiteAlias(let alias):
             return "Vas a borrar el alias '\(alias)'. Escribe CONFIRMAR para continuar."
+            
+        case .deleteWorkflow(let name):
+            return "Vas a borrar el workflow '\(name)'. Escribe CONFIRMAR para continuar."
 
         default:
             return "Esta acción requiere confirmación. Escribe CONFIRMAR para continuar."

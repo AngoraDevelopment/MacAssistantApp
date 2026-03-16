@@ -45,7 +45,7 @@ struct NameNormalizer {
         ]
 
         for (alias, normalized) in map {
-            if lower.contains(alias) {
+            if lower == alias {
                 return normalized
             }
         }
@@ -71,7 +71,6 @@ struct NameNormalizer {
             "stackoverflow": "https://stackoverflow.com",
 
             "twitter": "https://x.com",
-            "x": "https://x.com",
 
             "facebook": "https://www.facebook.com",
 

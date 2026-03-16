@@ -23,7 +23,7 @@ struct AssistantPersonaResponder {
 
         case .whatAreYou:
             if let assistantName {
-                return "Soy \(assistantName), tu asistente para Mac. Puedo conversar contigo y también ejecutar acciones como abrir apps, manejar memoria y correr workflows."
+                return "Soy \(assistantName), tu asistente de desarrollo. Puedo conversar contigo y también ejecutar acciones como abrir apps, manejar memoria y correr workflows."
             } else {
                 return "Soy tu asistente de desarrollo. Puedo conversar contigo y también ejecutar acciones como abrir apps, manejar memoria y correr workflows."
             }
